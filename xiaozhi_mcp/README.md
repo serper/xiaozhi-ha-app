@@ -6,7 +6,7 @@ Open-Meteo and optionally controlled Home Assistant lights, with friendly names.
 
 Add `https://github.com/serper/xiaozhi-ha-app` to **Settings → Apps → App Store → Repositories** in Home Assistant and install **Xiaozhi MCP**. The application downloads prebuilt `aarch64` and `amd64` images from GHCR; the images must be published before installation.
 
-Configure `mcp_endpoint` with the **private** Xiaozhi WebSocket MCP endpoint, and optionally `country_code` (defaults to ES).
+Configure `mcp_endpoint` with the **private** Xiaozhi WebSocket MCP endpoint, and optionally `country_code` (defaults to ES). For lighting, create a dedicated **non-administrator** Home Assistant user and create a long-lived access token in that user's profile. Enter it into `ha_access_token` (password field). The weather tool works without this token.
 
 ## Editable zone catalog
 
@@ -38,9 +38,9 @@ You can update the catalog in the Home Assistant application configuration, save
 
 ## Security warning
 
-Setting `homeassistant_api: true` supplies an administrator-equivalent `SUPERVISOR_TOKEN` to the app via the Home Assistant Supervisor Core API proxy. **Home Assistant does not enforce per-entity permission scopes on this token.** The security restriction therefore comes from our program's explicit allowlist and fixed API endpoints, not from a reduced-privilege HA credential. Install only trusted releases; treat the app as privileged software. The app does not expose a generic Home Assistant service, shell, configuration or automation tool.
+The app deliberately does **not** request `homeassistant_api: true`, which would provide an administrator-equivalent Supervisor token. Instead, lighting calls use the dedicated non-admin user's `ha_access_token` against the internal Home Assistant Core API. This account cannot manage Home Assistant settings. Home Assistant's ordinary user roles are **not** a fine-grained per-entity authorization system, so the local explicit allowlist is still essential. The app never exposes a generic service, shell, configuration or automation tool.
 
-Do not share `/data/options.json` or your Xiaozhi endpoint, which embeds a secret token. The connection is outbound only. No inbound ports are needed.
+Do not share `/data/options.json` , your HA access token or your Xiaozhi endpoint, which embeds a secret token. The connection is outbound only. No inbound ports are needed.
 
 ## Release
 
