@@ -1,15 +1,26 @@
-name: "Xiaozhi MCP - Open-Meteo"
+name: "Xiaozhi MCP - Open-Meteo and Lights"
 slug: "xiaozhi_mcp"
-description: "Puente MCP saliente a Xiaozhi, con herramienta meteorológica Open-Meteo"
-version: "0.1.1"
+description: "Herramientas MCP meteorológicas y control restringido de iluminación por zonas"
+version: "0.2.0"
+url: "https://github.com/serper/xiaozhi-ha-app"
+image: "ghcr.io/serper/xiaozhi-ha-app"
 arch:
   - aarch64
+  - amd64
 startup: application
 boot: auto
 init: false
 options:
   mcp_endpoint: ""
   country_code: "ES"
+  light_zones: []
 schema:
   mcp_endpoint: str
   country_code: str
+  ha_access_token: password?
+  light_zones:
+    - zone: str
+      entity_id: str
+      aliases: str
+      allow_read: bool
+      allow_control: bool
