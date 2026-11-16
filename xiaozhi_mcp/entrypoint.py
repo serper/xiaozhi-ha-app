@@ -33,8 +33,19 @@ def main():
     # Avoid environmental serialization of user settings; options are read from
     # protected Supervisor file once. Pass only the validated catalog to child.
     os.environ["LIGHT_ZONES_JSON"] = json.dumps(entries, ensure_ascii=False)
+    # Supervisor's /data is protected; prepare a private, persistent DB
+    # directory before dropping privileges. Never chmod/chown all of /data.
+    scheduler_dir = "/data/scheduler"
     if os.geteuid() == 0:
+        os.makedirs(scheduler_dir, mode=0o700, exist_ok=True)
         account = pwd.getpwnam("app")
+        os.chown(scheduler_dir, account.pw_uid, account.pw_gid)
+        os.chmod(scheduler_dir, 0o700)
+        for filename in ("tasks.sqlite3", "tasks.sqlite3-wal", "tasks.sqlite3-shm"):
+            pathname = os.path.join(scheduler_dir, filename)
+            if os.path.exists(pathname):
+                os.chown(pathname, account.pw_uid, account.pw_gid)
+        
         os.setgroups([])
         os.setgid(account.pw_gid)
         os.setuid(account.pw_uid)

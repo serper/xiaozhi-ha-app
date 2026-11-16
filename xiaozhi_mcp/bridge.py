@@ -6,6 +6,10 @@ import sys
 
 import websockets
 
+from ha_lights import HALights
+from scheduler import Scheduler
+import json
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger('xiaozhi-bridge')
 
@@ -59,8 +63,24 @@ async def connect_once(endpoint):
 
 async def run():
     endpoint = os.environ['MCP_ENDPOINT']
+    entries = json.loads(os.environ.get('LIGHT_ZONES_JSON', '[]'))
+    # Start the scheduler independently from Xiaozhi connectivity.
+    scheduler = Scheduler(HALights(entries, os.environ.get('HA_ACCESS_TOKEN', '')))
+    worker_task = asyncio.create_task(scheduler.worker(), name="scheduler")
+    delay = 1
+    try:
+        await connection_loop(endpoint, worker_task)
+    finally:
+        worker_task.cancel()
+        await asyncio.gather(worker_task, return_exceptions=True)
+
+
+async def connection_loop(endpoint, worker_task):
     delay = 1
     while True:
+        if worker_task.done():
+            worker_task.result()  # Fail loudly if the scheduler cannot run.
+
         try:
             await connect_once(endpoint)
             delay = 1

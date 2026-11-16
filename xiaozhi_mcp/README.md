@@ -1,4 +1,4 @@
-# Xiaozhi MCP — Home Assistant App v0.2.0
+# Xiaozhi MCP — Home Assistant App v0.3.0
 
 Open-Meteo and optionally controlled Home Assistant lights, with friendly names.
 
@@ -35,6 +35,22 @@ Allowed spoken requests:
 - “Apaga la luz de la cocina” → `controlar_luz(zona="cocina", accion="apagar")` if allowed
 
 You can update the catalog in the Home Assistant application configuration, save it, and restart the app; no Docker rebuild is required.
+
+## Planificador persistente (v0.3.0)
+
+Xiaozhi puede programar, consultar y cancelar órdenes **puntuales** de encendido/apagado:
+
+- «Apaga la luz de la cocina en un minuto» → `programar_luz(zona="cocina", accion="apagar", retraso_segundos=60)`
+- «¿Qué órdenes de luces hay pendientes?» → `listar_tareas()`
+- «Cancela la tarea 4» → `cancelar_tarea(id_tarea=4)`
+
+**No simules el tiempo transcurrido.** Programar una tarea solo devuelve la confirmación e identificador; la Raspberry Pi ejecuta la orden posteriormente, aunque el ESP32 o Xiaozhi se desconecten.
+
+El planificador admite retrasos de 1 a 86400 segundos y 50 tareas pendientes, y guarda SQLite en `/data/scheduler/tasks.sqlite3`, persistente entre actualizaciones de la misma aplicación. No crea automatizaciones de Home Assistant. No hay recurrencias ni programación por hora absoluta en esta versión.
+
+La autorización se comprueba al programar y **otra vez al ejecutar**, utilizando el catálogo cargado al arrancar la app. Tras cambiar permisos en las opciones, reinicia la aplicación para que la política activa se actualice. Si una tarea estaba ejecutándose al interrumpirse el proceso, se marca `interrupted` en el siguiente inicio y **no se repite automáticamente**, porque podría haber ejecutado ya su acción. La confirmación `Solicitada a HA` significa que la llamada fue aceptada, no que el estado físico se verificó.
+
+La cancelación solo afecta a tareas todavía `pending`; una tarea ya iniciada no se puede cancelar de forma fiable.
 
 ## Security warning
 
