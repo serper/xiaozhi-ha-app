@@ -75,7 +75,7 @@ class LightTests(unittest.TestCase):
         with patch("ha_lights.urlopen", side_effect=mocked):
             result = self.app.consultar_luz("cocina")
         self.assertEqual(result["luces"][0]["estado"], "on")
-        self.assertEqual(called, [("GET", "http://supervisor/core/api/states/switch.luz_cocina")])
+        self.assertEqual(called, [("GET", "http://homeassistant:8123/api/states/switch.luz_cocina")])
 
     def test_switch_configuration_entity_rejected(self):
         for name in ("switch.sonoff_zbminir2_desconectar_rele_2",
