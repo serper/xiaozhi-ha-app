@@ -1,8 +1,8 @@
 # Xiaozhi MCP for Home Assistant
 
-Home Assistant App providing MCP tools to **Xiaozhi AI**. Version 0.2.0 adds an editable zone catalog with restricted Home Assistant lighting queries and on/off actions, while retaining Open-Meteo.
+Home Assistant App providing MCP tools to **Xiaozhi AI**. Version 0.3.0 adds a persistent SQLite scheduler for delayed light on/off operations, while retaining editable lighting zones and Open-Meteo.
 
-**Status:** v0.1.1 has been validated on a real Raspberry Pi 5; v0.2.0 has passed offline CI and requires a GHCR image build and Home Assistant integration test before being considered production-ready.
+**Status:** v0.1.1 has been validated on a real Raspberry Pi 5; v0.3.0 requires CI, GHCR image publication and a Home Assistant integration test before being considered production-ready.
 
 ## Install
 
@@ -30,6 +30,7 @@ If migrating from a local app, stop the local installation first. A repository a
 ## Roadmap
 
 - v0.2: Editable light zones, voice aliases, optional read and on/off permissions
+- v0.3: One-shot persistent delayed lighting actions, task listing and cancellation
 - v0.2: Native ARM64/AMD64 GHCR image workflow
 - Next: Physical HA integration checks, finer UX and additional tools
 
