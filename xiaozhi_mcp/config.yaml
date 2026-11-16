@@ -1,7 +1,7 @@
 name: "Xiaozhi MCP - Open-Meteo and Lights"
 slug: "xiaozhi_mcp"
-description: "Herramientas MCP meteorológicas y control restringido de iluminación por zonas"
-version: "0.2.0"
+description: "MCP Open-Meteo, iluminación y planificador persistente"
+version: "0.3.0"
 url: "https://github.com/serper/xiaozhi-ha-app"
 image: "ghcr.io/serper/xiaozhi-ha-app"
 arch:
