@@ -1,0 +1,15 @@
+name: "Xiaozhi MCP - Open-Meteo"
+slug: "xiaozhi_mcp"
+description: "Puente MCP saliente a Xiaozhi, con herramienta meteorológica Open-Meteo"
+version: "0.1.1"
+arch:
+  - aarch64
+startup: application
+boot: auto
+init: false
+options:
+  mcp_endpoint: ""
+  country_code: "ES"
+schema:
+  mcp_endpoint: str
+  country_code: str
