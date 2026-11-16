@@ -1,0 +1,24 @@
+configuration:
+  mcp_endpoint:
+    name: "Endpoint MCP de Xiaozhi"
+    description: "URL WebSocket privada wss:// del agente Xiaozhi"
+  country_code:
+    name: "País para meteorología"
+    description: "Código ISO de dos letras, por defecto ES"
+  ha_access_token:
+    name: "Token de Home Assistant"
+    description: "Token de acceso de larga duración de un usuario no administrador, necesario solo para las luces"
+  light_zones:
+    name: "Catálogo de luces"
+    description: "Entidades y alias autorizados para consulta y control"
+    fields:
+      zone:
+        name: "Zona"
+      entity_id:
+        name: "Entidad de luz"
+      aliases:
+        name: "Alias de voz (separados por comas)"
+      allow_read:
+        name: "Permitir consulta"
+      allow_control:
+        name: "Permitir encender y apagar"
