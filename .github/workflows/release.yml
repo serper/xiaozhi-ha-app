@@ -1,0 +1,82 @@
+name: Build and publish Home Assistant app
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+          - arch: amd64
+            runner: ubuntu-24.04
+            platform: linux/amd64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read app version
+        id: app
+        run: |
+          version=$(sed -n 's/^version: "\(.*\)"/\1/p' xiaozhi_mcp/config.yaml)
+          test -n "$version"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "v${version}" ]]; then
+            echo "Tag does not match config.yaml" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./xiaozhi_mcp
+          platforms: ${{ matrix.platform }}
+          push: true
+          provenance: false
+          tags: ghcr.io/serper/xiaozhi-ha-app:${{ steps.app.outputs.version }}-${{ matrix.arch }}
+          build-args: |
+            BUILD_VERSION=${{ steps.app.outputs.version }}
+            BUILD_ARCH=${{ matrix.arch }}
+
+  manifest:
+    name: Publish multi-architecture image
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read app version
+        id: app
+        run: |
+          version=$(sed -n 's/^version: "\(.*\)"/\1/p' xiaozhi_mcp/config.yaml)
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish manifest
+        env:
+          VERSION: ${{ steps.app.outputs.version }}
+        run: |
+          docker buildx imagetools create \
+            -t "ghcr.io/serper/xiaozhi-ha-app:${VERSION}" \
+            "ghcr.io/serper/xiaozhi-ha-app:${VERSION}-aarch64" \
+            "ghcr.io/serper/xiaozhi-ha-app:${VERSION}-amd64"
+          docker buildx imagetools inspect "ghcr.io/serper/xiaozhi-ha-app:${VERSION}"
