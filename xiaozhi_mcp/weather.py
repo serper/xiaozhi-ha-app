@@ -77,5 +77,24 @@ def weather_spain(ciudad: str) -> dict:
         return {'error': 'No se pudo consultar Open-Meteo', 'tipo': type(exc).__name__}
 
 
+# Register HA tools only when the administrator explicitly configures zones.
+# Xiaozhi discovers exactly these two named operations; it has no generic API.
+from ha_lights import HALights
+
+_zone_entries = json.loads(os.environ.get("LIGHT_ZONES_JSON", "[]"))
+if _zone_entries:
+    _ha = HALights(_zone_entries, os.environ["SUPERVISOR_TOKEN"])
+
+    @mcp.tool()
+    def consultar_luz(zona: str) -> dict:
+        """Consulta estado de la luz de una zona autorizada (ej. salón o cocina). No permite modificar nada."""
+        return _ha.consultar_luz(zona)
+
+    @mcp.tool()
+    def controlar_luz(zona: str, accion: str) -> dict:
+        """Enciende o apaga las luces de una zona autorizada. accion: 'encender' o 'apagar'. No permite otras acciones."""
+        return _ha.controlar_luz(zona, accion)
+
+
 if __name__ == '__main__':
     mcp.run(transport='stdio')
