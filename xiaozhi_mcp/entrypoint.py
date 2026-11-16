@@ -23,11 +23,13 @@ def main():
         validate_zones(entries)
     except ValueError as exc:
         raise SystemExit(f"Catálogo de luces no válido: {exc}")
-    token = os.getenv("SUPERVISOR_TOKEN", "")
+    token = str(options.get("ha_access_token", "")).strip()
     if entries and not token:
-        raise SystemExit("SUPERVISOR_TOKEN no disponible para consultar Home Assistant")
+        raise SystemExit("Configura ha_access_token de un usuario HA no administrador")
     os.environ["MCP_ENDPOINT"] = endpoint
     os.environ["WEATHER_COUNTRY"] = country
+    if token:
+        os.environ["HA_ACCESS_TOKEN"] = token
     # Avoid environmental serialization of user settings; options are read from
     # protected Supervisor file once. Pass only the validated catalog to child.
     os.environ["LIGHT_ZONES_JSON"] = json.dumps(entries, ensure_ascii=False)
