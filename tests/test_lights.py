@@ -12,6 +12,8 @@ from ha_lights import HALights, validate_zones
 class FakeResponse:
     def __init__(self, data):
         self.data = data
+    def read(self):
+        return json.dumps(self.data).encode('utf-8')
     def __enter__(self):
         return self
     def __exit__(self, *args):
