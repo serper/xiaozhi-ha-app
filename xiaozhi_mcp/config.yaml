@@ -10,7 +10,6 @@ arch:
 startup: application
 boot: auto
 init: false
-homeassistant_api: true
 options:
   mcp_endpoint: ""
   country_code: "ES"
@@ -18,6 +17,7 @@ options:
 schema:
   mcp_endpoint: str
   country_code: str
+  ha_access_token: password?
   light_zones:
     - zone: str
       entity_id: str
