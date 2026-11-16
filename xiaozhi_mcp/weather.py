@@ -1,4 +1,4 @@
-"""MCP stdio: weather lookups only. No Home Assistant API access."""
+"""MCP stdio: weather, allowlisted lights and scheduled light actions."""
 import json
 import logging
 import os
@@ -94,6 +94,30 @@ if _zone_entries:
     def controlar_luz(zona: str, accion: str) -> dict:
         """Enciende o apaga las luces de una zona autorizada. accion: 'encender' o 'apagar'. No permite otras acciones."""
         return _ha.controlar_luz(zona, accion)
+
+    from scheduler import Scheduler
+    _scheduler = Scheduler(_ha)
+
+    @mcp.tool()
+    def programar_luz(zona: str, accion: str, retraso_segundos: int) -> dict:
+        """Programa una acción futura REAL sobre una luz autorizada.
+        Para 'apaga dentro de un minuto' usa retraso_segundos=60.
+        No ejecutes controlar_luz ahora si se solicitó un retraso.
+        Solo encender/apagar; entre 1 segundo y 24 horas; ejecución puntual.
+        """
+        return _scheduler.programar_luz(zona, accion, retraso_segundos)
+
+    @mcp.tool()
+    def listar_tareas() -> dict:
+        """Lista órdenes de iluminación pendientes de ejecución futura."""
+        return _scheduler.listar_tareas()
+
+    @mcp.tool()
+    def cancelar_tarea(id_tarea: int) -> dict:
+        """Cancela una tarea de iluminación pendiente por su identificador.
+        Consulta listar_tareas si no sabes el identificador; no canceles sin comprobarlo.
+        """
+        return _scheduler.cancelar_tarea(id_tarea)
 
 
 if __name__ == '__main__':
