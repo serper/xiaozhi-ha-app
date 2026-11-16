@@ -1,8 +1,8 @@
 """Restricted Home Assistant lighting tools for Xiaozhi MCP.
 
 All entity IDs come from local Supervisor settings, never from model input.
-The Supervisor token is an administrator credential; strict allowlists at this
-application boundary are defense-in-depth, not HA-level permission scoping.
+Use a dedicated non-administrator Home Assistant account and its long-lived
+access token, plus local explicit allowlists and fixed permitted endpoints.
 """
 import json
 import logging
@@ -16,7 +16,7 @@ from urllib.request import Request, urlopen
 LOGGER = logging.getLogger("lights")
 ENTITY_RE = re.compile(r"^(light|switch)\.[a-z0-9_]+$")
 BLOCKED_SWITCH_PARTS = ("desconectar_rele", "modo_turbo", "led_de_red", "engineering_mode")
-API_ROOT = "http://supervisor/core/api"
+API_ROOT = "http://homeassistant:8123/api"
 
 
 def normalize(s):
