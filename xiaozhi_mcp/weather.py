@@ -83,7 +83,7 @@ from ha_lights import HALights
 
 _zone_entries = json.loads(os.environ.get("LIGHT_ZONES_JSON", "[]"))
 if _zone_entries:
-    _ha = HALights(_zone_entries, os.environ["SUPERVISOR_TOKEN"])
+    _ha = HALights(_zone_entries, os.environ["HA_ACCESS_TOKEN"])
 
     @mcp.tool()
     def consultar_luz(zona: str) -> dict:
