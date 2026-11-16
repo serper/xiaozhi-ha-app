@@ -3,6 +3,8 @@ name: Build and publish Home Assistant app
 on:
   workflow_dispatch:
   push:
+    branches:
+      - "release/v0.2.0"
     tags:
       - "v*"
 
