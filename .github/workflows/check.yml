@@ -32,7 +32,8 @@ jobs:
           assert app["version"] == "0.2.0"
           assert set(app["arch"]) == {"aarch64", "amd64"}
           assert app["image"] == "ghcr.io/serper/xiaozhi-ha-app"
-          assert app["homeassistant_api"] is True
+          assert "homeassistant_api" not in app
+          assert app["schema"]["ha_access_token"] == "password?"
           assert app["options"]["light_zones"] == []
           assert repository["url"].endswith("/xiaozhi-ha-app")
           PY
