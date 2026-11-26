@@ -18,7 +18,7 @@ jobs:
           python-version: "3.12"
       - name: Check Python syntax
         run: python -m compileall -q xiaozhi_mcp tests
-      - name: Test lighting controls without HA access
+      - name: Test MCP services without external access
         run: python -m unittest discover -s tests -v
       - name: Validate app metadata
         run: |
@@ -29,11 +29,13 @@ jobs:
           app = yaml.safe_load(Path("xiaozhi_mcp/config.yaml").read_text())
           repository = yaml.safe_load(Path("repository.yaml").read_text())
           assert app["slug"] == "xiaozhi_mcp"
-          assert app["version"] == "0.4.1"
+          assert app["version"] == "0.5.0"
           assert set(app["arch"]) == {"aarch64", "amd64"}
           assert app["image"] == "ghcr.io/serper/xiaozhi-ha-app"
           assert "homeassistant_api" not in app
           assert app["schema"]["ha_access_token"] == "password?"
           assert app["options"]["light_zones"] == []
+          assert app["options"]["sensor_catalog"] == []
+          assert app["schema"]["sensor_catalog"] == [{"name": "str", "entity_id": "str", "aliases": "str", "allow_read": "bool"}]
           assert repository["url"].endswith("/xiaozhi-ha-app")
           PY

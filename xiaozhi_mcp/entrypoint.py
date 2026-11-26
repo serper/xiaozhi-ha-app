@@ -4,6 +4,7 @@ import os
 import pwd
 
 from ha_lights import validate_zones
+from ha_sensors import validate_sensors
 
 
 def main():
@@ -23,8 +24,13 @@ def main():
         validate_zones(entries)
     except ValueError as exc:
         raise SystemExit(f"Catálogo de luces no válido: {exc}")
+    sensors = options.get("sensor_catalog", [])
+    try:
+        validate_sensors(sensors)
+    except ValueError as exc:
+        raise SystemExit(f"Catálogo de sensores no válido: {exc}")
     token = str(options.get("ha_access_token", "")).strip()
-    if entries and not token:
+    if (entries or any(item["allow_read"] for item in sensors)) and not token:
         raise SystemExit("Configura ha_access_token de un usuario HA no administrador")
     enabled = options.get("web_search_enabled", False)
     key = str(options.get("tavily_api_key", "")).strip()
@@ -50,6 +56,7 @@ def main():
     # Avoid environmental serialization of user settings; options are read from
     # protected Supervisor file once. Pass only the validated catalog to child.
     os.environ["LIGHT_ZONES_JSON"] = json.dumps(entries, ensure_ascii=False)
+    os.environ["SENSOR_CATALOG_JSON"] = json.dumps(sensors, ensure_ascii=False)
     # Supervisor's /data is protected; prepare a private, persistent DB
     # directory before dropping privileges. Never chmod/chown all of /data.
     scheduler_dir = "/data/scheduler"

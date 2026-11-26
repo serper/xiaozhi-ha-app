@@ -43,3 +43,5 @@ Licensed under [MIT](LICENSE).
 Tavily public web search, disabled by default, with local persistent credit limits and a short-lived in-memory cache. See the [add-on documentation](xiaozhi_mcp/README.md).
 
 Version 0.4.1 adds persistent local Tavily usage statistics, available by voice and in add-on logs, without consuming search credits.
+
+Version 0.5.0 adds an optional read-only Home Assistant sensor catalog with names and voice aliases. See the [add-on documentation](xiaozhi_mcp/README.md).

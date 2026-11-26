@@ -7,7 +7,7 @@ configuration:
     description: "Código ISO de dos letras, por defecto ES"
   ha_access_token:
     name: "Token de Home Assistant"
-    description: "Token de acceso de larga duración de un usuario no administrador, necesario solo para las luces"
+    description: "Token de acceso de larga duración de un usuario no administrador, necesario para las luces y los sensores autorizados"
   light_zones:
     name: "Catálogo de luces"
     description: "Entidades y alias autorizados para consulta y control"
@@ -38,3 +38,15 @@ configuration:
   web_search_monthly_limit:
     name: "Límite mensual local"
     description: "Créditos reservados por mes UTC"
+  sensor_catalog:
+    name: "Catálogo de sensores"
+    description: "Sensores autorizados de solo lectura"
+    fields:
+      name:
+        name: "Nombre"
+      entity_id:
+        name: "Entidad sensor o binary_sensor"
+      aliases:
+        name: "Alias de voz (separados por comas)"
+      allow_read:
+        name: "Permitir consulta"

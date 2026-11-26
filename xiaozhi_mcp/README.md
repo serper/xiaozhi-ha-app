@@ -82,3 +82,21 @@ The MCP tool `web_search` accepts a public query, topic (general/news) and optio
 ### Local search statistics (0.4.1)
 
 Ask Xiaozhi about Tavily credits or search usage; the new read-only MCP tool `web_search_statistics` returns the current UTC calendar month's local reserved credits, configured limit, remaining local credits, attempts, completed successes/failures, unknown attempts, cache hits, estimated credits saved, budget blocks and mean completed provider latency. The same compact counters are logged on MCP startup/reconnect and after searches, without queries or credentials. Invalid or concurrent-rejected calls are excluded. The existing credit database is migrated in place: earlier reservations are retained and shown separately; historical detailed counts cannot be reconstructed. Statistics calls do not contact Tavily. The local budget is not the actual Tavily account balance, and may differ because failures are conservatively reserved, account billing periods differ or other clients use the key. No Home Assistant entities are created.
+
+## Read-only sensor catalog (0.5.0)
+
+The new optional configuration table is independent of lights and empty by default. Example (fictional IDs; replace with your real HA entities):
+
+```yaml
+sensor_catalog:
+  - name: "Temperatura salón"
+    entity_id: sensor.fake_temperature
+    aliases: "temperatura sala, temperatura salón"
+    allow_read: true
+  - name: "Presencia comedor"
+    entity_id: binary_sensor.fake_presence
+    aliases: "presencia comedor, alguien en comedor"
+    allow_read: true
+```
+
+Reuse the non-administrator HA token, which must have access to the selected entities. Only sensor and binary_sensor domains are supported; duplicate IDs, ambiguous names/aliases and missing explicit read permissions are rejected. Restart after configuration changes. The tools listar_sensores and consultar_sensor are only registered when at least one sensor is readable. Listing exposes names only; reading uses a fixed GET endpoint and returns selected state fields, units, device class and timestamps. Unknown/unavailable states are marked unavailable. No history, writes, entity discovery, additional Supervisor privileges or external web requests. The catalog restricts MCP operations, not the underlying HA token's privileges. Authorized sensor values are shared with Xiaozhi when queried; do not catalog sensitive entities unless you accept that disclosure. Tool descriptions instruct the model not to send private data to Tavily, but do not guarantee model isolation. No migration of existing settings or credit/task data is required.
