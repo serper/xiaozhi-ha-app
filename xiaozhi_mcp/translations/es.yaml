@@ -22,3 +22,19 @@ configuration:
         name: "Permitir consulta"
       allow_control:
         name: "Permitir encender y apagar"
+
+  web_search_enabled:
+    name: "Búsqueda web"
+    description: "Activar búsqueda pública mediante Tavily"
+  tavily_api_key:
+    name: "Clave API de Tavily"
+    description: "Clave privada; necesaria solo al activar búsqueda"
+  web_search_depth:
+    name: "Profundidad"
+    description: "Básica: 1 crédito; avanzada: 2"
+  web_search_max_results:
+    name: "Máximo de resultados"
+    description: "Entre 1 y 10"
+  web_search_monthly_limit:
+    name: "Límite mensual local"
+    description: "Créditos reservados por mes UTC"
