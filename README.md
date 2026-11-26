@@ -37,3 +37,7 @@ If migrating from a local app, stop the local installation first. A repository a
 See [app documentation](xiaozhi_mcp/README.md).
 
 Licensed under [MIT](LICENSE).
+
+### Optional web search (0.4.0)
+
+Tavily public web search, disabled by default, with local persistent credit limits and a short-lived in-memory cache. See the [add-on documentation](xiaozhi_mcp/README.md).

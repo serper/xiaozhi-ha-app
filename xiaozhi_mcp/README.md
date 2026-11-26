@@ -65,3 +65,16 @@ The `.github/workflows/release.yml` workflow builds ARM64 and AMD64 images with 
 ## Verification
 
 The automated tests prove zone parsing, ambiguity detection, denied operations, dangerous switches rejection and exact fixed service paths. They do not constitute an integration test of Supervisor or a physical end-to-end Home Assistant deployment.
+
+## Optional web search (Tavily)
+
+Disabled by default. Obtain a key at https://app.tavily.com/ and enter it in the add-on configuration, then enable web search and restart. Never commit or share the key.
+
+```yaml
+web_search_enabled: true
+web_search_depth: basic
+web_search_max_results: 5
+web_search_monthly_limit: 900
+```
+
+The MCP tool `web_search` accepts a public query, topic (general/news) and optional time_range (day/week/month/year). Weather remains on Open-Meteo. Basic/advanced reserve 1/2 credits respectively. The local UTC calendar-month budget persists in /data/web_search; failed or ambiguous calls are conservatively counted. It does not account for other clients using your Tavily account. Successful results are cached in memory for five minutes (64 entries); reconnects clear the cache. Queries are sent to Tavily; do not include private information. External results are untrusted, and the tool description instructs the model not to follow embedded instructions; this is not a complete prompt-injection defense. No automatic retries. The HTTP socket timeout is eight seconds, not a guaranteed overall wall-clock deadline.

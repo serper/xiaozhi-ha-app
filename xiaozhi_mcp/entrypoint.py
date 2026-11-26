@@ -26,6 +26,23 @@ def main():
     token = str(options.get("ha_access_token", "")).strip()
     if entries and not token:
         raise SystemExit("Configura ha_access_token de un usuario HA no administrador")
+    enabled = options.get("web_search_enabled", False)
+    key = str(options.get("tavily_api_key", "")).strip()
+    depth = options.get("web_search_depth", "basic")
+    results = options.get("web_search_max_results", 5)
+    limit = options.get("web_search_monthly_limit", 900)
+    if enabled and (not key or any(ord(c) < 33 or ord(c) > 126 for c in key)
+                    or depth not in ("basic", "advanced")
+                    or type(results) is not int or not 1 <= results <= 10
+                    or type(limit) is not int or not 1 <= limit <= 100000):
+        raise SystemExit("Configuración de búsqueda web no válida")
+    os.environ["WEB_SEARCH_ENABLED"] = "1" if enabled else "0"
+    os.environ.pop("TAVILY_API_KEY", None)
+    if enabled:
+        os.environ["TAVILY_API_KEY"] = key
+        os.environ["WEB_SEARCH_DEPTH"] = depth
+        os.environ["WEB_SEARCH_MAX_RESULTS"] = str(results)
+        os.environ["WEB_SEARCH_MONTHLY_LIMIT"] = str(limit)
     os.environ["MCP_ENDPOINT"] = endpoint
     os.environ["WEATHER_COUNTRY"] = country
     if token:
@@ -46,6 +63,15 @@ def main():
             if os.path.exists(pathname):
                 os.chown(pathname, account.pw_uid, account.pw_gid)
         
+        if enabled:
+            search_dir = "/data/web_search"
+            os.makedirs(search_dir, mode=0o700, exist_ok=True)
+            os.chown(search_dir, account.pw_uid, account.pw_gid)
+            os.chmod(search_dir, 0o700)
+            for filename in ("credits.sqlite3", "credits.sqlite3-journal"):
+                pathname = os.path.join(search_dir, filename)
+                if os.path.exists(pathname):
+                    os.chown(pathname, account.pw_uid, account.pw_gid)
         os.setgroups([])
         os.setgid(account.pw_gid)
         os.setuid(account.pw_uid)

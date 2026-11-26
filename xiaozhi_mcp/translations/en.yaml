@@ -22,3 +22,19 @@ configuration:
         name: "Allow status queries"
       allow_control:
         name: "Allow on/off control"
+
+  web_search_enabled:
+    name: "Web search"
+    description: "Enable public search via Tavily"
+  tavily_api_key:
+    name: "Tavily API key"
+    description: "Private key; required only when search is enabled"
+  web_search_depth:
+    name: "Search depth"
+    description: "Basic: 1 credit; advanced: 2"
+  web_search_max_results:
+    name: "Maximum results"
+    description: "Between 1 and 10"
+  web_search_monthly_limit:
+    name: "Local monthly limit"
+    description: "Reserved credits per UTC month"
