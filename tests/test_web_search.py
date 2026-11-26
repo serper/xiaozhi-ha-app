@@ -67,6 +67,56 @@ class WebSearchTests(unittest.TestCase):
         self.assertEqual(len(result["results"][0]["content"]), 1000)
         self.assertNotIn("raw_content", result)
 
+    def test_statistics_persist_and_do_not_spend(self):
+        self.search.search("first")
+        self.search.search("first")
+        self.provider.search.side_effect = RuntimeError("secret")
+        self.search.search("second")
+        self.search.search("third")
+        stats = WebSearch(self.provider, CreditBudget(self.path, 2)).statistics()
+        self.assertEqual(stats["reserved_credits"], 2)
+        self.assertEqual(stats["remaining_local_credits"], 0)
+        self.assertEqual(stats["provider_attempts"], 2)
+        self.assertEqual(stats["successful_searches"], 1)
+        self.assertEqual(stats["failed_searches"], 1)
+        self.assertEqual(stats["cache_hits"], 1)
+        self.assertEqual(stats["estimated_credits_saved"], 1)
+        self.assertEqual(stats["blocked_by_budget"], 1)
+        self.assertEqual(stats["unfinished_or_unknown_attempts"], 0)
+        self.assertEqual(self.provider.search.call_count, 2)
+        self.assertNotIn("secret", str(stats))
+
+    def test_migrate_existing_credit_database(self):
+        import sqlite3
+        month = CreditBudget.month()
+        with sqlite3.connect(self.path) as db:
+            db.execute("CREATE TABLE credits (month TEXT PRIMARY KEY, used INTEGER NOT NULL)")
+            db.execute("INSERT INTO credits VALUES (?, ?)", (month, 1))
+        stats = self.search.statistics()
+        self.assertEqual(stats["credits_before_statistics"], 1)
+        self.assertEqual(stats["provider_attempts"], 0)
+        self.assertEqual(stats["remaining_local_credits"], 1)
+        self.search.search("new query")
+        stats = self.search.statistics()
+        self.assertEqual(stats["credits_before_statistics"], 1)
+        self.assertEqual(stats["reserved_credits"], 2)
+        self.assertEqual(stats["successful_searches"], 1)
+
+    def test_month_boundary_and_unknown_attempt(self):
+        budget = CreditBudget(self.path, 2)
+        self.assertTrue(budget.reserve(2, "2026-11"))
+        budget.record("2026-11", "cache", 2)
+        self.assertEqual(budget.statistics("2026-11")["unfinished_or_unknown_attempts"], 1)
+        self.assertEqual(budget.statistics("2026-11")["estimated_credits_saved"], 2)
+        self.assertEqual(budget.statistics("2026-12")["remaining_local_credits"], 2)
+        budget.record("2026-11", "success", 123)
+        self.assertEqual(budget.statistics("2026-11")["average_provider_latency_ms"], 123)
+        self.assertEqual(budget.statistics("2026-12")["provider_attempts"], 0)
+
+    def test_invalid_queries_not_counted(self):
+        self.search.search("")
+        self.assertEqual(self.search.statistics()["provider_attempts"], 0)
+
     def test_http_error(self):
         self.provider.search.side_effect = HTTPError("https://example.org", 429, "secret", {}, None)
         self.assertIn("cuota", self.search.search("query")["error"])

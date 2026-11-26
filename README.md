@@ -41,3 +41,5 @@ Licensed under [MIT](LICENSE).
 ### Optional web search (0.4.0)
 
 Tavily public web search, disabled by default, with local persistent credit limits and a short-lived in-memory cache. See the [add-on documentation](xiaozhi_mcp/README.md).
+
+Version 0.4.1 adds persistent local Tavily usage statistics, available by voice and in add-on logs, without consuming search credits.

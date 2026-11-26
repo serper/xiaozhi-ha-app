@@ -1,7 +1,7 @@
 name: "Xiaozhi MCP - Open-Meteo and Lights"
 slug: "xiaozhi_mcp"
 description: "MCP Open-Meteo, iluminación y planificador persistente"
-version: "0.4.0"
+version: "0.4.1"
 url: "https://github.com/serper/xiaozhi-ha-app"
 image: "ghcr.io/serper/xiaozhi-ha-app"
 arch:
