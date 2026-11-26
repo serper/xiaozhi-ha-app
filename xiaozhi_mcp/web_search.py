@@ -1,5 +1,7 @@
 """Optional bounded Tavily search. No Home Assistant data is passed to the provider."""
 import json
+import logging
+from contextlib import closing
 import sqlite3
 import time
 from collections import OrderedDict
@@ -64,26 +66,99 @@ class TavilyProvider:
                 "answer": clip(data.get("answer"), 1500), "results": results}
 
 
+logger = logging.getLogger("web_search")
+
+
 class CreditBudget:
     """Reserve before sending; uncertain/failed requests are not refunded."""
     def __init__(self, path, limit):
         self.path = path
         self.limit = limit
 
-    def reserve(self, cost):
-        month = datetime.now(timezone.utc).strftime("%Y-%m")
-        with sqlite3.connect(self.path, timeout=3) as db:
-            db.execute("CREATE TABLE IF NOT EXISTS credits "
-                       "(month TEXT PRIMARY KEY, used INTEGER NOT NULL)")
+    @staticmethod
+    def month():
+        return datetime.now(timezone.utc).strftime("%Y-%m")
+
+    @staticmethod
+    def schema(db):
+        db.execute("CREATE TABLE IF NOT EXISTS credits "
+                   "(month TEXT PRIMARY KEY, used INTEGER NOT NULL)")
+        db.execute("""CREATE TABLE IF NOT EXISTS search_stats (
+            month TEXT PRIMARY KEY,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            success INTEGER NOT NULL DEFAULT 0,
+            failed INTEGER NOT NULL DEFAULT 0,
+            cache_hits INTEGER NOT NULL DEFAULT 0,
+            saved_credits INTEGER NOT NULL DEFAULT 0,
+            blocked INTEGER NOT NULL DEFAULT 0,
+            latency_ms INTEGER NOT NULL DEFAULT 0,
+            tracked_credits INTEGER NOT NULL DEFAULT 0
+        )""")
+
+    def reserve(self, cost, month=None):
+        month = month or self.month()
+        with closing(sqlite3.connect(self.path, timeout=3)) as db, db:
+            self.schema(db)
             db.execute("BEGIN IMMEDIATE")
+            db.execute("INSERT OR IGNORE INTO search_stats(month) VALUES (?)", (month,))
             row = db.execute("SELECT used FROM credits WHERE month=?", (month,)).fetchone()
             used = row[0] if row else 0
             if used + cost > self.limit:
+                db.execute("UPDATE search_stats SET blocked=blocked+1 WHERE month=?", (month,))
                 return False
             db.execute("INSERT INTO credits VALUES (?, ?) "
                        "ON CONFLICT(month) DO UPDATE SET used=excluded.used",
                        (month, used + cost))
+            db.execute("UPDATE search_stats SET attempts=attempts+1, "
+                       "tracked_credits=tracked_credits+? WHERE month=?", (cost, month))
             return True
+
+    def record(self, month, event, amount=0):
+        with closing(sqlite3.connect(self.path, timeout=3)) as db, db:
+            self.schema(db)
+            db.execute("BEGIN IMMEDIATE")
+            db.execute("INSERT OR IGNORE INTO search_stats(month) VALUES (?)", (month,))
+            if event == "cache":
+                db.execute("UPDATE search_stats SET cache_hits=cache_hits+1, "
+                           "saved_credits=saved_credits+? WHERE month=?", (amount, month))
+            elif event in ("success", "failed"):
+                # Column chosen only from this fixed allowlist.
+                db.execute(f"UPDATE search_stats SET {event}={event}+1, "
+                           "latency_ms=latency_ms+? WHERE month=?", (amount, month))
+            else:
+                raise ValueError("Invalid statistics event")
+
+    def statistics(self, month=None):
+        month = month or self.month()
+        with closing(sqlite3.connect(self.path, timeout=3)) as db, db:
+            self.schema(db)
+            db.execute("BEGIN")
+            row = db.execute("SELECT used FROM credits WHERE month=?", (month,)).fetchone()
+            used = row[0] if row else 0
+            row = db.execute("SELECT attempts, success, failed, cache_hits, saved_credits, "
+                             "blocked, latency_ms, tracked_credits FROM search_stats WHERE month=?",
+                             (month,)).fetchone()
+            attempts, success, failed, hits, saved, blocked, latency, tracked = row or (0,) * 8
+        completed = success + failed
+        return {
+            "month_utc": month,
+            "source": "local_addon",
+            "reserved_credits": used,
+            "monthly_limit": self.limit,
+            "remaining_local_credits": max(0, self.limit - used),
+            "usage_percent": round(100 * used / self.limit, 1),
+            "credits_before_statistics": max(0, used - tracked),
+            "provider_attempts": attempts,
+            "successful_searches": success,
+            "failed_searches": failed,
+            "unfinished_or_unknown_attempts": max(0, attempts - completed),
+            "cache_hits": hits,
+            "estimated_credits_saved": saved,
+            "blocked_by_budget": blocked,
+            "average_provider_latency_ms": round(latency / completed) if completed else None,
+            "note": "Créditos reservados locales, no saldo real de la cuenta Tavily. "
+                    "Los contadores detallados comienzan en v0.4.1.",
+        }
 
 
 class WebSearch:
@@ -93,6 +168,29 @@ class WebSearch:
         self.ttl = ttl
         self.cache = OrderedDict()
         self.lock = Lock()
+
+    def statistics(self):
+        try:
+            return self.budget.statistics()
+        except Exception:
+            return {"error": "No se pudieron leer las estadísticas locales"}
+
+    def log_statistics(self):
+        stats = self.statistics()
+        if "error" in stats:
+            logger.warning("Estadísticas Tavily no disponibles")
+        else:
+            logger.info("Tavily UTC %s: créditos reservados %d/%d; intentos %d; "
+                        "éxitos %d; fallos %d; caché %d; bloqueos %d",
+                        stats["month_utc"], stats["reserved_credits"], stats["monthly_limit"],
+                        stats["provider_attempts"], stats["successful_searches"],
+                        stats["failed_searches"], stats["cache_hits"], stats["blocked_by_budget"])
+
+    def _record(self, month, event, amount):
+        try:
+            self.budget.record(month, event, amount)
+        except Exception:
+            logger.warning("No se pudo registrar un evento estadístico de Tavily")
 
     def search(self, query, topic="general", time_range=None):
         query = query.strip()
@@ -104,15 +202,24 @@ class WebSearch:
         # Avoid parallel requests and duplicate charges in this MCP process.
         if not self.lock.acquire(blocking=False):
             return {"error": "Hay otra búsqueda en curso"}
+        reserved = False
+        completed = False
+        started = None
+        month = None
         try:
+            month = self.budget.month()
             now = time.monotonic()
             entry = self.cache.get(key)
             if entry and entry[0] > now:
                 self.cache.move_to_end(key)
+                self._record(month, "cache", self.provider.cost)
                 return entry[1]
-            if not self.budget.reserve(self.provider.cost):
+            if not self.budget.reserve(self.provider.cost, month):
                 return {"error": "Límite mensual local de búsqueda alcanzado"}
+            reserved = True
+            started = time.monotonic()
             result = self.provider.search(query, topic, time_range)
+            completed = True
             self.cache[key] = (time.monotonic() + self.ttl, result)
             self.cache.move_to_end(key)
             while len(self.cache) > 64:
@@ -128,4 +235,10 @@ class WebSearch:
             # Do not serialize exceptions, queries, response bodies or credentials.
             return {"error": "No se pudo completar la búsqueda"}
         finally:
-            self.lock.release()
+            try:
+                if reserved:
+                    self._record(month, "success" if completed else "failed",
+                                 round((time.monotonic() - started) * 1000))
+                self.log_statistics()
+            finally:
+                self.lock.release()

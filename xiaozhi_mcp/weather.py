@@ -130,6 +130,17 @@ if os.environ.get("WEB_SEARCH_ENABLED") == "1":
                      int(os.environ["WEB_SEARCH_MONTHLY_LIMIT"])),
     )
 
+    _search.log_statistics()
+
+    @mcp.tool()
+    def web_search_statistics() -> dict:
+        """Consulta estadísticas locales de Tavily del mes UTC actual: créditos reservados,
+        límite, créditos restantes locales, búsquedas, errores y caché. No realiza búsquedas
+        ni consume créditos. No confundas el saldo local con el saldo real de la cuenta.
+        Úsala cuando se pregunte por consumo o créditos del asistente.
+        """
+        return _search.statistics()
+
     @mcp.tool()
     def web_search(query: str, topic: str = "general",
                    time_range: str | None = None) -> dict:
