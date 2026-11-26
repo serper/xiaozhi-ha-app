@@ -1,7 +1,7 @@
 name: "Xiaozhi MCP - Open-Meteo and Lights"
 slug: "xiaozhi_mcp"
-description: "MCP Open-Meteo, iluminación y planificador persistente"
-version: "0.4.1"
+description: "MCP Open-Meteo, iluminación, planificador, Tavily y sensores autorizados"
+version: "0.5.0"
 url: "https://github.com/serper/xiaozhi-ha-app"
 image: "ghcr.io/serper/xiaozhi-ha-app"
 arch:
@@ -14,6 +14,7 @@ options:
   mcp_endpoint: ""
   country_code: "ES"
   light_zones: []
+  sensor_catalog: []
   web_search_enabled: false
   web_search_depth: basic
   web_search_max_results: 5
@@ -33,3 +34,8 @@ schema:
       aliases: str
       allow_read: bool
       allow_control: bool
+  sensor_catalog:
+    - name: str
+      entity_id: str
+      aliases: str
+      allow_read: bool

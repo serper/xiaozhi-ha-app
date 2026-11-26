@@ -7,7 +7,7 @@ configuration:
     description: "Two-letter ISO country code, default ES"
   ha_access_token:
     name: "Home Assistant token"
-    description: "Long-lived access token from a non-administrator user, only needed for lights"
+    description: "Long-lived access token from a non-administrator user, needed for authorized lights and sensors"
   light_zones:
     name: "Light catalog"
     description: "Allowlisted entities and names for read and on/off control"
@@ -38,3 +38,15 @@ configuration:
   web_search_monthly_limit:
     name: "Local monthly limit"
     description: "Reserved credits per UTC month"
+  sensor_catalog:
+    name: "Sensor catalog"
+    description: "Allowlisted read-only sensors"
+    fields:
+      name:
+        name: "Name"
+      entity_id:
+        name: "Sensor or binary_sensor entity"
+      aliases:
+        name: "Voice aliases (comma-separated)"
+      allow_read:
+        name: "Allow reading"
